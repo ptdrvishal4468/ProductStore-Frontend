@@ -9,15 +9,12 @@ interface Product {
 }
 
 function App() {
-  // Authentication State
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [token, setToken] = useState(''); 
-
-  // Data State
   const [products, setProducts] = useState<Product[]>([]);
   
-  // "Create Product" State (New!)
+  // Create Product State
   const [newName, setNewName] = useState('');
   const [newPrice, setNewPrice] = useState('');
 
@@ -47,22 +44,17 @@ function App() {
     }
   };
 
-  // --- 3. CREATE PRODUCT (New!) ---
+  // --- 3. CREATE PRODUCT ---
   const handleAddProduct = async () => {
     try {
-      // Convert string price to number
       const priceNumber = parseFloat(newPrice); 
-
-      // Send POST request with Token
       await axios.post("https://localhost:7106/api/Products", 
         { name: newName, price: priceNumber }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      alert("Product Added!");
-      setNewName('');  // Clear form
-      setNewPrice(''); // Clear form
-      loadProducts();  // Refresh the list instantly!
+      setNewName('');  
+      setNewPrice(''); 
+      loadProducts();  
 
     } catch (error) {
       alert("Failed to add product.");
@@ -70,10 +62,32 @@ function App() {
     }
   };
 
+  // --- 4. DELETE PRODUCT (New!) ---
+  const handleDelete = async (id: number) => {
+    // A. Ask for confirmation
+    if (!window.confirm("Are you sure you want to delete this product?")) {
+      return; // Stop if they clicked "Cancel"
+    }
+
+    try {
+      // B. Send DELETE request to API (notice the ID at the end of the URL)
+      await axios.delete(`https://localhost:7106/api/Products/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // C. Refresh the list
+      loadProducts();
+
+    } catch (error) {
+      alert("Failed to delete. Do you have permission?");
+      console.error(error);
+    }
+  };
+
   return (
     <div className="container mt-5">
       <div className="row justify-content-center">
-        <div className="col-md-8">
+        <div className="col-md-9">
           <div className="card shadow">
             <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
               <h3>Product Store</h3>
@@ -100,42 +114,33 @@ function App() {
               {/* DASHBOARD */}
               {token && (
                 <div>
-                  {/* NEW: ADD PRODUCT FORM */}
+                  {/* ADD PRODUCT FORM */}
                   <div className="card mb-4 p-3 bg-light border-0">
                     <h5>Add New Product</h5>
                     <div className="row g-2">
                       <div className="col-md-5">
-                        <input 
-                          type="text" className="form-control" placeholder="Product Name" 
-                          value={newName} onChange={(e) => setNewName(e.target.value)} 
-                        />
+                        <input type="text" className="form-control" placeholder="Product Name" value={newName} onChange={(e) => setNewName(e.target.value)} />
                       </div>
                       <div className="col-md-4">
-                        <input 
-                          type="number" className="form-control" placeholder="Price" 
-                          value={newPrice} onChange={(e) => setNewPrice(e.target.value)} 
-                        />
+                        <input type="number" className="form-control" placeholder="Price" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} />
                       </div>
                       <div className="col-md-3">
-                        <button onClick={handleAddProduct} className="btn btn-success w-100">
-                          + Add
-                        </button>
+                        <button onClick={handleAddProduct} className="btn btn-success w-100">+ Add</button>
                       </div>
                     </div>
                   </div>
 
-                  <button onClick={loadProducts} className="btn btn-warning w-100 mb-4">
-                    Refresh List
-                  </button>
+                  <button onClick={loadProducts} className="btn btn-warning w-100 mb-4">Refresh List</button>
 
-                  {/* PRODUCT LIST */}
+                  {/* PRODUCT LIST with DELETE BUTTONS */}
                   {products.length > 0 && (
-                    <table className="table table-striped table-hover">
+                    <table className="table table-striped table-hover align-middle">
                       <thead className="table-dark">
                         <tr>
                           <th>ID</th>
                           <th>Name</th>
                           <th>Price</th>
+                          <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -144,6 +149,14 @@ function App() {
                             <td>{p.id}</td>
                             <td>{p.name}</td>
                             <td>${p.price}</td>
+                            <td>
+                              <button 
+                                onClick={() => handleDelete(p.id)} 
+                                className="btn btn-danger btn-sm"
+                              >
+                                Delete
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
